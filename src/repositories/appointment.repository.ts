@@ -204,9 +204,7 @@ export const checkAvailability = async (
   fechaHoraInicio: string,
   schedules: DoctorSchedule[]
 ): Promise<boolean> => {
-  const dateTime = new Date(fechaHoraInicio);
-
-  if (!isWithinSchedule(schedules, dateTime)) {
+  if (!isWithinSchedule(schedules, fechaHoraInicio)) {
     return false;
   }
 

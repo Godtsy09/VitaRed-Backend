@@ -89,11 +89,11 @@ export interface RegisterDoctorData {
   clinicLocationId: number;
   clinicZona: number;
   clinicDireccion: string;
-  clinicTelefono: string | undefined;
+  clinicTelefono: string;
   clinicWhatsapp: string;
   id_especialidad: number;
-  numero_colegiado: string | undefined;
-  tarifa_consulta: number | undefined;
+  numero_colegiado: string;
+  tarifa_consulta: number;
 }
 
 export type FilterDoctorsInput = {

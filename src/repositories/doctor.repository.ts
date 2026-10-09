@@ -1,6 +1,6 @@
 import type { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { pool } from '../config/database';
-import { Doctor, Clinic, Specialty, DoctorSchedule, Location } from '../types';
+import { Doctor, Specialty, Location } from '../types';
 
 interface DoctorRow extends RowDataPacket {
   id_doctor: number;
@@ -261,20 +261,6 @@ export const findByUserId = async (userId: number): Promise<Doctor | null> => {
   };
 };
 
-export const findSchedulesByDoctorId = async (doctorId: number): Promise<DoctorSchedule[]> => {
-  const [rows] = await pool.query<ScheduleRow[]>(
-    `SELECT id_horario, id_doctor, dia, hora_inicio, hora_fin FROM horario_doctor WHERE id_doctor = ?`,
-    [doctorId]
-  );
-  return rows.map((r) => ({
-    id_horario: r.id_horario,
-    id_doctor: r.id_doctor,
-    dia: r.dia,
-    hora_inicio: r.hora_inicio,
-    hora_fin: r.hora_fin,
-  }));
-};
-
 export const updateDoctor = async (doctorId: number, data: { id_especialidad?: number; numero_colegiado?: string | null; tarifa_consulta?: number | null }): Promise<boolean> => {
   const fields: string[] = [];
   const values: unknown[] = [];
@@ -295,11 +281,11 @@ export const updateDoctor = async (doctorId: number, data: { id_especialidad?: n
   if (fields.length === 0) return false;
 
   values.push(doctorId);
-  const [result] = await pool.execute<ResultSetHeader>(
+  await pool.execute<ResultSetHeader>(
     `UPDATE doctor SET ${fields.join(', ')} WHERE id_doctor = ?`,
     values as any[]
   );
-  return result.affectedRows > 0;
+  return true;
 };
 
 export const updateClinic = async (clinicId: number, data: { nombre?: string; id_location?: number; zona?: number; direccion?: string; telefono?: string | null; whatsapp?: string }): Promise<boolean> => {
@@ -334,11 +320,11 @@ export const updateClinic = async (clinicId: number, data: { nombre?: string; id
   if (fields.length === 0) return false;
 
   values.push(clinicId);
-  const [result] = await pool.execute<ResultSetHeader>(
+  await pool.execute<ResultSetHeader>(
     `UPDATE clinica SET ${fields.join(', ')} WHERE id_clinica = ?`,
     values as any[]
   );
-  return result.affectedRows > 0;
+  return true;
 };
 
 export const getSpecialties = async (): Promise<Specialty[]> => {
@@ -353,4 +339,20 @@ export const getLocations = async (): Promise<Location[]> => {
     `SELECT id, city, department FROM locations ORDER BY department, city`
   );
   return rows as Location[];
+};
+
+export const specialtyExists = async (id: number): Promise<boolean> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 1 FROM especialidad WHERE id_especialidad = ?`,
+    [id]
+  );
+  return rows.length > 0;
+};
+
+export const locationExists = async (id: number): Promise<boolean> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 1 FROM locations WHERE id = ?`,
+    [id]
+  );
+  return rows.length > 0;
 };

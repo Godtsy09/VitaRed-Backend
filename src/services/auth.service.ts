@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import * as userRepository from '../repositories/user.repository';
+import * as doctorRepository from '../repositories/doctor.repository';
 import { HttpError } from '../utils/HttpError';
 import { env } from '../config/env';
 import { LoginResult, PublicUser, RegisterDoctorData } from '../types';
@@ -71,6 +72,13 @@ export const registerDoctor = async (data: RegisterDoctorData): Promise<LoginRes
   const existing = await userRepository.findByEmail(data.email);
   if (existing) {
     throw new HttpError(409, 'El email ya está registrado');
+  }
+
+  if (!(await doctorRepository.specialtyExists(data.id_especialidad))) {
+    throw new HttpError(400, 'La especialidad seleccionada no es válida');
+  }
+  if (!(await doctorRepository.locationExists(data.clinicLocationId))) {
+    throw new HttpError(400, 'La ubicación seleccionada no es válida');
   }
 
   const passwordHash = await hashPassword(data.password);

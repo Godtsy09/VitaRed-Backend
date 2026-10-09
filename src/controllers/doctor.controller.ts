@@ -1,14 +1,24 @@
 import type { Request, Response } from 'express';
 import * as doctorService from '../services/doctor.service';
 import { HttpError } from '../utils/HttpError';
+import { parseId } from '../utils/parseId';
+import { parseQueryInt } from '../utils/parseQueryInt';
+
+const parseOptionalId = (value: unknown): number | null | undefined => {
+  if (value === undefined) return undefined;
+  return parseQueryInt(value, 0);
+};
 
 export const getDoctors = async (req: Request, res: Response) => {
+  const locationId = parseOptionalId(req.query.locationId);
+  const specialtyId = parseOptionalId(req.query.specialtyId);
+
+  if (locationId === null || specialtyId === null) {
+    return res.status(400).json({ error: 'Parámetros de filtro inválidos' });
+  }
+
   try {
-    const filters = {
-      locationId: req.query.locationId ? Number(req.query.locationId) : undefined,
-      specialtyId: req.query.specialtyId ? Number(req.query.specialtyId) : undefined,
-    };
-    const doctors = await doctorService.getDoctors(filters);
+    const doctors = await doctorService.getDoctors({ locationId, specialtyId });
     return res.status(200).json(doctors);
   } catch (error) {
     if (error instanceof HttpError) {
@@ -21,10 +31,8 @@ export const getDoctors = async (req: Request, res: Response) => {
 
 export const getDoctorById = async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'ID inválido' });
-    }
+    const id = parseId(req, res);
+    if (id === null) return;
     const doctor = await doctorService.getDoctorById(id);
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor no encontrado' });

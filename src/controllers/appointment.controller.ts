@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import * as appointmentService from '../services/appointment.service';
 import { HttpError } from '../utils/HttpError';
+import { parseId } from '../utils/parseId';
 
 export const create = async (req: Request, res: Response) => {
   try {
@@ -27,13 +28,12 @@ export const getMyAppointments = async (req: Request, res: Response) => {
 
 export const getDoctorAppointments = async (req: Request, res: Response) => {
   try {
-    const doctor = await import('../repositories/doctor.repository').then(m => m.findByUserId(req.user!.id));
-    if (!doctor) {
-      return res.status(404).json({ error: 'Perfil de doctor no encontrado' });
-    }
-    const appointments = await appointmentService.getDoctorAppointments(doctor.id_doctor);
+    const appointments = await appointmentService.getAppointmentsForDoctorUser(req.user!.id);
     return res.status(200).json(appointments);
   } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error('Error al obtener citas del doctor:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
@@ -41,10 +41,8 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
 
 export const updateStatus = async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'ID inválido' });
-    }
+    const id = parseId(req, res);
+    if (id === null) return;
     await appointmentService.updateStatus(req.user!.id, id, req.body.estado);
     return res.status(200).json({ message: 'Estado de cita actualizado' });
   } catch (error) {
